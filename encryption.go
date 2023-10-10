@@ -267,18 +267,7 @@ func VerifySignature(message, signature string, pub crypto.PublicKey) (bool, err
 }
 
 // Javokhir is started
-// GenerateSecretKey generates a new ECDSA private key
-func GenerateSecretKey() (*ecdsa.PrivateKey, error) {
-	curve := elliptic.P256()
-	privateKey, err := ecdsa.GenerateKey(curve, rand.Reader)
-	if err != nil {
-		return nil, err
-	}
-	return privateKey, nil
-}
-
-// Sign signs the given data using the provided ECDSA private key
-func Sign(dataToSign interface{}, secretKey *ecdsa.PrivateKey) ([]byte, error) {
+func sign(dataToSign interface{}, secretKey *ecdsa.PrivateKey) ([]byte, error) {
 	// Serialize the data to be signed
 	dataBytes, err := asn1.Marshal(dataToSign)
 	if err != nil {
@@ -289,7 +278,7 @@ func Sign(dataToSign interface{}, secretKey *ecdsa.PrivateKey) ([]byte, error) {
 	hash := sha256.Sum256(dataBytes)
 
 	// Sign the hash
-	r, s, err := ecdsa.Sign(rand.Reader, secretKey, hash[:1])
+	r, s, err := ecdsa.Sign(rand.Reader, secretKey, hash[:])
 	if err != nil {
 		return nil, err
 	}
@@ -306,12 +295,11 @@ func Sign(dataToSign interface{}, secretKey *ecdsa.PrivateKey) ([]byte, error) {
 }
 
 // Verify verifies the given ECDSA signature using the provided public key.
-func Verify(signature []byte, publicKey ecdsa.PublicKey, dataToVerify interface{}) (bool, error) {
+func verify(signature []byte, publicKey ecdsa.PublicKey, dataToVerify interface{}) (bool, error) {
 	// Deserialize the signature
 	var sig struct {
 		R, S *big.Int
 	}
-
 	_, err := asn1.Unmarshal(signature, &sig)
 	if err != nil {
 		return false, err
@@ -328,20 +316,5 @@ func Verify(signature []byte, publicKey ecdsa.PublicKey, dataToVerify interface{
 
 	// Verify the signature
 	return ecdsa.Verify(&publicKey, hash[:], sig.R, sig.S), nil
-}
-
-// HexToBytes converts a hexadecimal string to a byte slice.
-func HexToBytes(hexString string) ([]byte, error) {
-	// Remove the "0x" prefix if present
-	if len(hexString) > 1 && hexString[0] == '0' && (hexString[1] == 'x' || hexString[1] == 'X') {
-		hexString = hexString[2:]
-	}
-
-	// Parse the hexadecimal string into bytes
-	bytes, err := hex.DecodeString(hexString)
-	if err != nil {
-		return nil, fmt.Errorf("invalid hexadecimal string: %v", err)
-	}
-	return bytes, nil
 }
 // Javokhir is finished
